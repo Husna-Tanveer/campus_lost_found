@@ -7,7 +7,8 @@ import '../utils/colors.dart';
 import '../widgets/item_card.dart';
 import 'report_lost_screen.dart';
 import 'report_found_screen.dart';
-import 'login_screen.dart';
+import 'search_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,39 +17,211 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = [
+    const _HomeTab(),
+    const SearchScreen(),
+    const _PostTab(),
+    const ProfileScreen(),
+  ];
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _screens[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          if (index == 2) {
+            _showPostOptions(context);
+          } else {
+            setState(() => _currentIndex = index);
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: Colors.grey,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search_outlined),
+            activeIcon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.add_circle,
+              color: AppColors.primary,
+              size: 40,
+            ),
+            label: 'Post',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
   }
+
+  void _showPostOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Report an Item',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ReportLostScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.lost.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: AppColors.lost.withOpacity(0.3)),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.report_problem,
+                              color: AppColors.lost, size: 40),
+                          SizedBox(height: 8),
+                          Text(
+                            'Lost Item',
+                            style: TextStyle(
+                              color: AppColors.lost,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Report something\nyou lost',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ReportFoundScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.found.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: AppColors.found.withOpacity(0.3)),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.check_circle,
+                              color: AppColors.found, size: 40),
+                          SizedBox(height: 8),
+                          Text(
+                            'Found Item',
+                            style: TextStyle(
+                              color: AppColors.found,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Report something\nyou found',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PostTab extends StatelessWidget {
+  const _PostTab();
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return const SizedBox();
   }
+}
 
-  Future<void> _logout() async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    await auth.logout();
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
-  }
+class _HomeTab extends StatelessWidget {
+  const _HomeTab();
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final userEmail = auth.currentUser?.email ?? '';
+    final userName = userEmail.split('@')[0];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -68,185 +241,203 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
         actions: [
-          // User Avatar
           Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: PopupMenuButton<void>(
-              icon: CircleAvatar(
-                backgroundColor: Colors.white,
-                radius: 16,
-                child: Text(
-                  auth.currentUser?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+            padding: const EdgeInsets.only(right: 12),
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              radius: 18,
+              child: Text(
+                userName.substring(0, 1).toUpperCase(),
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
-              itemBuilder: (ctx) => [
-                PopupMenuItem(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        auth.currentUser?.email ?? '',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  onTap: _logout,
-                  child: const Row(
-                    children: [
-                      Icon(Icons.logout, color: AppColors.lost, size: 20),
-                      SizedBox(width: 8),
-                      Text('Logout',
-                          style: TextStyle(color: AppColors.lost)),
-                    ],
-                  ),
-                ),
-              ],
             ),
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
-          child: Column(
-            children: [
-              // Search Bar
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) =>
-                      setState(() => _searchQuery = value),
-                  decoration: InputDecoration(
-                    hintText: 'Search items...',
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    prefixIcon:
-                    const Icon(Icons.search, color: AppColors.primary),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 16, vertical: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-              ),
-              // Tab Bar
-              TabBar(
-                controller: _tabController,
-                indicatorColor: Colors.white,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white60,
-                tabs: const [
-                  Tab(text: 'All Items'),
-                  Tab(text: 'Lost'),
-                  Tab(text: 'Found'),
                 ],
               ),
-            ],
+              child: const Row(
+                children: [
+                  Icon(Icons.search, color: AppColors.primary),
+                  SizedBox(width: 10),
+                  Text(
+                    'Search lost or found items...',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
       body: Consumer<ItemProvider>(
         builder: (context, provider, child) {
-          final allItems = provider.searchItems(_searchQuery);
-          final lostItems = allItems
-              .where((i) => i.status == ItemStatus.lost)
-              .toList();
-          final foundItems = allItems
-              .where((i) => i.status == ItemStatus.found)
-              .toList();
+          final items = provider.items;
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  // Stats Cards
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _statsCard(
+                          'Lost Items',
+                          provider.lostItems.length.toString(),
+                          Icons.report_problem,
+                          AppColors.lost,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _statsCard(
+                          'Found Items',
+                          provider.foundItems.length.toString(),
+                          Icons.check_circle,
+                          AppColors.found,
+                        ),
+                      ),
+                    ],
+                  ),
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildItemList(allItems),
-              _buildItemList(lostItems),
-              _buildItemList(foundItems),
-            ],
+                  const SizedBox(height: 24),
+
+                  // Recent Reports Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Recent Reports',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        '${items.length} total',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Items List
+                  items.isEmpty
+                      ? Center(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 40),
+                        Icon(Icons.inbox_outlined,
+                            size: 80,
+                            color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No reports yet\nBe the first to report!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                      : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      return ItemCard(item: items[index]);
+                    },
+                  ),
+                ],
+              ),
+            ),
           );
         },
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'lost',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const ReportLostScreen()),
-            ),
-            backgroundColor: AppColors.lost,
-            icon: const Icon(Icons.report_problem, color: Colors.white),
-            label: const Text('Report Lost',
-                style: TextStyle(color: Colors.white)),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'found',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => const ReportFoundScreen()),
-            ),
-            backgroundColor: AppColors.found,
-            icon: const Icon(Icons.check_circle, color: Colors.white),
-            label: const Text('Report Found',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildItemList(List<ItemModel> items) {
-    if (items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined,
-                size: 80, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'No items found',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
+  Widget _statsCard(
+      String title, String count, IconData icon, Color color) {
+    return Container(
       padding: const EdgeInsets.all(16),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        return ItemCard(item: items[index]);
-      },
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                count,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
