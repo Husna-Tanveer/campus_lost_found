@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "334308805126",
+    "project_id": "campus-lost-found-77dac",
+    "storage_bucket": "campus-lost-found-77dac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:334308805126:android:3138734c912faeda7cd187",
+        "android_client_info": {
+          "package_name": "com.example.first_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "334308805126-svmcamf19ruh54bgrh87np265h3cpl5k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.first_app",
+            "certificate_hash": "ac886a1f91a7081a62e37ee97eeb42626383d833"
+          }
+        },
+        {
+          "client_id": "334308805126-om7i3eqov3kfg62863dh0tascgskm38h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBm8p2ED5IcuETKZ0vJPw7QcoGC1ktnceU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "334308805126-om7i3eqov3kfg62863dh0tascgskm38h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
