@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/item_provider.dart';
 import '../providers/auth_provider.dart';
-import '../models/item_model.dart';
 import '../utils/colors.dart';
 import '../widgets/item_card.dart';
 import 'report_lost_screen.dart';
@@ -20,26 +19,28 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const _HomeTab(),
-    const SearchScreen(),
-    const _PostTab(),
-    const ProfileScreen(),
-  ];
+  void _onTabTapped(int index) {
+    if (index == 2) {
+      _showPostOptions(context);
+    } else {
+      setState(() => _currentIndex = index);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> screens = [
+      _HomeTab(onProfileTap: () => setState(() => _currentIndex = 3)),
+      const SearchScreen(),
+      const _PostTab(),
+      const ProfileScreen(),
+    ];
+
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == 2) {
-            _showPostOptions(context);
-          } else {
-            setState(() => _currentIndex = index);
-          }
-        },
+        onTap: _onTabTapped,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
@@ -214,8 +215,23 @@ class _PostTab extends StatelessWidget {
   }
 }
 
-class _HomeTab extends StatelessWidget {
-  const _HomeTab();
+class _HomeTab extends StatefulWidget {
+  final VoidCallback? onProfileTap;
+  const _HomeTab({super.key, this.onProfileTap});
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -243,66 +259,84 @@ class _HomeTab extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              radius: 18,
-              child: Text(
-                userName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+            child: GestureDetector(
+              onTap: widget.onProfileTap,
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                radius: 18,
+                child: Text(
+                  userName.isNotEmpty ? userName.substring(0, 1).toUpperCase() : 'U',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.search, color: AppColors.primary),
-                  SizedBox(width: 10),
-                  Text(
-                    'Search lost or found items...',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+      ),
+      body: Column(
+        children: [
+          // Search Bar with Rounded Gradient Background
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            decoration: const BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search lost or found items...',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 22),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
-        ),
-      ),
-      body: Consumer<ItemProvider>(
-        builder: (context, provider, child) {
-          final items = provider.items;
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
+          Expanded(
+            child: Consumer<ItemProvider>(
+              builder: (context, provider, child) {
+                final items = provider.searchItems(_searchQuery);
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
                   // Stats Cards
                   Row(
                     children: [
@@ -332,16 +366,16 @@ class _HomeTab extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Recent Reports',
-                        style: TextStyle(
+                      Text(
+                        _searchQuery.isEmpty ? 'Recent Reports' : 'Search Results',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
                       ),
                       Text(
-                        '${items.length} total',
+                        '${items.length} ${items.length == 1 ? 'item' : 'items'}',
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
@@ -355,43 +389,49 @@ class _HomeTab extends StatelessWidget {
                   // Items List
                   items.isEmpty
                       ? Center(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 40),
-                        Icon(Icons.inbox_outlined,
-                            size: 80,
-                            color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No reports yet\nBe the first to report!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 40),
+                              Icon(
+                                _searchQuery.isEmpty ? Icons.inbox_outlined : Icons.search_off,
+                                size: 80,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _searchQuery.isEmpty
+                                    ? 'No reports yet\nBe the first to report!'
+                                    : 'No items found matching\n"$_searchQuery"',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
                           ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            return ItemCard(item: items[index]);
+                          },
                         ),
                       ],
                     ),
-                  )
-                      : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      return ItemCard(item: items[index]);
-                    },
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
-  Widget _statsCard(
-      String title, String count, IconData icon, Color color) {
+  Widget _statsCard(String title, String count, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

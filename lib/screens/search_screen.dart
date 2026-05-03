@@ -46,26 +46,27 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           // Search Bar
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
             decoration: const BoxDecoration(
               gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
             child: TextField(
               controller: _searchController,
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
                 hintText: 'Search for lost or found items...',
-                hintStyle: const TextStyle(color: Colors.grey),
-                prefixIcon:
-                const Icon(Icons.search, color: AppColors.primary),
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 22),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                )
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
                     : null,
                 filled: true,
                 fillColor: Colors.white,
@@ -73,16 +74,26 @@ class _SearchScreenState extends State<SearchScreen> {
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
 
+          const SizedBox(height: 12),
+
           // Category Filter
           SizedBox(
-            height: 50,
+            height: 40,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
                 _categoryChip(null, 'All'),
                 _categoryChip(ItemCategory.electronics, 'Electronics'),
@@ -94,6 +105,26 @@ class _SearchScreenState extends State<SearchScreen> {
               ],
             ),
           ),
+
+          const SizedBox(height: 20),
+
+          // Results Header
+          if (_searchQuery.isNotEmpty || _selectedCategory != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  Text(
+                    'Search Results',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // Results
           Expanded(
@@ -109,29 +140,52 @@ class _SearchScreenState extends State<SearchScreen> {
 
                 if (items.isEmpty) {
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.search_off,
-                            size: 80, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchQuery.isEmpty
-                              ? 'Search for any item'
-                              : 'No items found for "$_searchQuery"',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade600,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _searchQuery.isEmpty && _selectedCategory == null
+                                  ? Icons.search
+                                  : Icons.search_off,
+                              size: 64,
+                              color: Colors.grey.shade300,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                          const SizedBox(height: 20),
+                          Text(
+                            _searchQuery.isEmpty && _selectedCategory == null
+                                ? 'Search for any item'
+                                : 'No items found matching your search',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Try different keywords or category',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     return ItemCard(item: items[index]);
@@ -148,28 +202,33 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _categoryChip(ItemCategory? category, String label) {
     final isSelected = _selectedCategory == category;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
         onTap: () => setState(() => _selectedCategory = category),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              if (!isSelected)
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+            ],
             border: Border.all(
-              color:
-              isSelected ? AppColors.primary : AppColors.divider,
+              color: isSelected ? AppColors.primary : Colors.grey.shade200,
             ),
           ),
+          alignment: Alignment.center,
           child: Text(
             label,
             style: TextStyle(
-              color:
-              isSelected ? Colors.white : AppColors.textSecondary,
-              fontWeight: isSelected
-                  ? FontWeight.bold
-                  : FontWeight.normal,
-              fontSize: 13,
+              color: isSelected ? Colors.white : Colors.grey.shade700,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 12,
             ),
           ),
         ),
