@@ -1,6 +1,6 @@
-# first_app
+# campus_lost_found
 
-A new Flutter project.
+Campus Lost and Found application.
 
 ## Getting Started
 
