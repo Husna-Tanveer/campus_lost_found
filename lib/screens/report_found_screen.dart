@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../providers/item_provider.dart';
 import '../models/item_model.dart';
 import '../utils/colors.dart';
+import '../utils/locations.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
@@ -18,11 +19,11 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  final _locationController = TextEditingController();
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _phoneController = TextEditingController(text: '+92');
 
   ItemCategory _selectedCategory = ItemCategory.other;
+  String? _selectedLocation;
   String? _imagePath;
   bool _isLoading = false;
 
@@ -30,7 +31,6 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
   void dispose() {
     _titleController.dispose();
     _descController.dispose();
-    _locationController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -57,7 +57,7 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
       description: _descController.text.trim(),
       status: ItemStatus.found,
       category: _selectedCategory,
-      location: _locationController.text.trim(),
+      location: _selectedLocation ?? '',
       contactName: _nameController.text.trim(),
       contactNumber: _phoneController.text.trim(),
       imagePath: _imagePath,
@@ -235,12 +235,44 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
 
               // Location
               _sectionLabel('Found At Location *'),
-              _buildTextField(
-                controller: _locationController,
-                hint: 'e.g. Cafeteria, Parking Lot, Lab-2',
-                icon: Icons.location_on,
-                validator: (val) =>
-                val!.isEmpty ? 'Please enter location' : null,
+              DropdownButtonFormField<String>(
+                value: _selectedLocation,
+                isExpanded: true,
+                hint: const Text('Select Location', style: TextStyle(color: AppColors.textSecondary)),
+                icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.found),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.location_on, color: AppColors.found),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.divider),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.divider),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.found, width: 2),
+                  ),
+                ),
+                items: AppLocations.locations.map((String location) {
+                  return DropdownMenuItem<String>(
+                    value: location,
+                    child: Text(
+                      location,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedLocation = newValue;
+                  });
+                },
+                validator: (value) => value == null ? 'Please select a location' : null,
               ),
 
               const SizedBox(height: 16),
@@ -264,8 +296,15 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
                 hint: 'Enter your phone number',
                 icon: Icons.phone,
                 keyboardType: TextInputType.phone,
-                validator: (val) =>
-                val!.isEmpty ? 'Please enter contact number' : null,
+                validator: (val) {
+                  if (val == null || val.isEmpty) {
+                    return 'Please enter contact number';
+                  }
+                  if (!RegExp(r'^((\+92)|(92)|(0))?[3][0-9]{9}$').hasMatch(val)) {
+                    return 'Please enter a valid phone number';
+                  }
+                  return null;
+                },
               ),
 
               const SizedBox(height: 30),
