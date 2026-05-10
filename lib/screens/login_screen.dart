@@ -198,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _obscurePassword
                                       ? Icons.visibility
                                       : Icons.visibility_off,
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.primary,
                                 ),
                                 onPressed: () => setState(() =>
                                 _obscurePassword = !_obscurePassword),
