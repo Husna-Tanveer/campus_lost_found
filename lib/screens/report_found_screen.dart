@@ -9,7 +9,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class ReportFoundScreen extends StatefulWidget {
-  const ReportFoundScreen({super.key});
+  final ItemModel? itemToEdit;
+  const ReportFoundScreen({super.key, this.itemToEdit});
 
   @override
   State<ReportFoundScreen> createState() => _ReportFoundScreenState();
@@ -17,15 +18,30 @@ class ReportFoundScreen extends StatefulWidget {
 
 class _ReportFoundScreenState extends State<ReportFoundScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController(text: '+92');
+  late TextEditingController _titleController;
+  late TextEditingController _descController;
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
 
   ItemCategory _selectedCategory = ItemCategory.other;
   String? _selectedLocation;
   String? _imagePath;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.itemToEdit?.title ?? '');
+    _descController = TextEditingController(text: widget.itemToEdit?.description ?? '');
+    _nameController = TextEditingController(text: widget.itemToEdit?.contactName ?? '');
+    _phoneController = TextEditingController(text: widget.itemToEdit?.contactNumber ?? '+92');
+    
+    if (widget.itemToEdit != null) {
+      _selectedCategory = widget.itemToEdit!.category;
+      _selectedLocation = widget.itemToEdit!.location;
+      _imagePath = widget.itemToEdit!.imagePath;
+    }
+  }
 
   @override
   void dispose() {
@@ -52,23 +68,40 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
 
     setState(() => _isLoading = true);
 
-    await Provider.of<ItemProvider>(context, listen: false).addItem(
-      title: _titleController.text.trim(),
-      description: _descController.text.trim(),
-      status: ItemStatus.found,
-      category: _selectedCategory,
-      location: _selectedLocation ?? '',
-      contactName: _nameController.text.trim(),
-      contactNumber: _phoneController.text.trim(),
-      imagePath: _imagePath,
-    );
+    final provider = Provider.of<ItemProvider>(context, listen: false);
+
+    if (widget.itemToEdit != null) {
+      // Update existing item
+      await provider.updateItem(
+        id: widget.itemToEdit!.id,
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
+        category: _selectedCategory,
+        location: _selectedLocation ?? '',
+        contactName: _nameController.text.trim(),
+        contactNumber: _phoneController.text.trim(),
+        imagePath: _imagePath,
+      );
+    } else {
+      // Add new item
+      await provider.addItem(
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
+        status: ItemStatus.found,
+        category: _selectedCategory,
+        location: _selectedLocation ?? '',
+        contactName: _nameController.text.trim(),
+        contactNumber: _phoneController.text.trim(),
+        imagePath: _imagePath,
+      );
+    }
 
     setState(() => _isLoading = false);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Found item reported successfully!'),
+        SnackBar(
+          content: Text(widget.itemToEdit != null ? 'Report updated successfully!' : 'Found item reported successfully!'),
           backgroundColor: AppColors.found,
         ),
       );
@@ -78,6 +111,8 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.itemToEdit != null;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -90,9 +125,9 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Report Found Item',
-          style: TextStyle(
+        title: Text(
+          isEditing ? 'Edit Found Report' : 'Report Found Item',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
@@ -115,14 +150,14 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
                   border:
                   Border.all(color: AppColors.found.withOpacity(0.3)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.check_circle, color: AppColors.found),
-                    SizedBox(width: 12),
+                    const Icon(Icons.check_circle, color: AppColors.found),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Found something? Help reconnect it with its owner!',
-                        style: TextStyle(
+                        isEditing ? 'Update the details of your report below.' : 'Found something? Help reconnect it with its owner!',
+                        style: const TextStyle(
                           color: AppColors.found,
                           fontSize: 13,
                         ),
@@ -151,7 +186,9 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
                     borderRadius: BorderRadius.circular(12),
                     child: kIsWeb
                         ? const Icon(Icons.check_circle, color: AppColors.found, size: 50)
-                        : Image.file(
+                        : _imagePath!.startsWith('assets/') || _imagePath!.startsWith('http')
+                            ? const Icon(Icons.image, size: 50, color: AppColors.found)
+                            : Image.file(
                       File(_imagePath!),
                       fit: BoxFit.cover,
                     ),
@@ -323,14 +360,14 @@ class _ReportFoundScreenState extends State<ReportFoundScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Row(
+                      : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle, color: Colors.white),
-                      SizedBox(width: 8),
+                      Icon(isEditing ? Icons.save : Icons.check_circle, color: Colors.white),
+                      const SizedBox(width: 8),
                       Text(
-                        'Submit Found Report',
-                        style: TextStyle(
+                        isEditing ? 'Save Changes' : 'Submit Found Report',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

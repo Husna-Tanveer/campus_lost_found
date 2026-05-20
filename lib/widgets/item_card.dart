@@ -6,6 +6,8 @@ import '../models/item_model.dart';
 import '../providers/item_provider.dart';
 import '../utils/colors.dart';
 import '../screens/item_detail_screen.dart';
+import '../screens/report_lost_screen.dart';
+import '../screens/report_found_screen.dart';
 
 class ItemCard extends StatelessWidget {
   final ItemModel item;
@@ -183,11 +185,29 @@ class ItemCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Delete Button
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: Colors.redAccent),
-                    onPressed: () => _confirmDelete(context),
+                  // Action Buttons
+                  Column(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined,
+                            color: AppColors.primary),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => isLost
+                                  ? ReportLostScreen(itemToEdit: item)
+                                  : ReportFoundScreen(itemToEdit: item),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline,
+                            color: Colors.redAccent),
+                        onPressed: () => _confirmDelete(context),
+                      ),
+                    ],
                   ),
                 ],
               ),

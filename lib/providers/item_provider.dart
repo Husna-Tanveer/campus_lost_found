@@ -63,6 +63,37 @@ class ItemProvider extends ChangeNotifier {
     await saveItems();
   }
 
+  // Update existing item
+  Future<void> updateItem({
+    required String id,
+    required String title,
+    required String description,
+    required ItemCategory category,
+    required String location,
+    required String contactName,
+    required String contactNumber,
+    String? imagePath,
+  }) async {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      final existingItem = _items[index];
+      _items[index] = ItemModel(
+        id: id,
+        title: title,
+        description: description,
+        status: existingItem.status,
+        category: category,
+        location: location,
+        dateTime: existingItem.dateTime,
+        contactName: contactName,
+        contactNumber: contactNumber,
+        imagePath: imagePath,
+      );
+      notifyListeners();
+      await saveItems();
+    }
+  }
+
   // Delete item
   Future<void> deleteItem(String id) async {
     _items.removeWhere((item) => item.id == id);

@@ -9,7 +9,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class ReportLostScreen extends StatefulWidget {
-  const ReportLostScreen({super.key});
+  final ItemModel? itemToEdit;
+  const ReportLostScreen({super.key, this.itemToEdit});
 
   @override
   State<ReportLostScreen> createState() => _ReportLostScreenState();
@@ -17,15 +18,30 @@ class ReportLostScreen extends StatefulWidget {
 
 class _ReportLostScreenState extends State<ReportLostScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController(text: '+92');
+  late TextEditingController _titleController;
+  late TextEditingController _descController;
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
 
   ItemCategory _selectedCategory = ItemCategory.other;
   String? _selectedLocation;
   String? _imagePath;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.itemToEdit?.title ?? '');
+    _descController = TextEditingController(text: widget.itemToEdit?.description ?? '');
+    _nameController = TextEditingController(text: widget.itemToEdit?.contactName ?? '');
+    _phoneController = TextEditingController(text: widget.itemToEdit?.contactNumber ?? '+92');
+    
+    if (widget.itemToEdit != null) {
+      _selectedCategory = widget.itemToEdit!.category;
+      _selectedLocation = widget.itemToEdit!.location;
+      _imagePath = widget.itemToEdit!.imagePath;
+    }
+  }
 
   @override
   void dispose() {
@@ -52,23 +68,40 @@ class _ReportLostScreenState extends State<ReportLostScreen> {
 
     setState(() => _isLoading = true);
 
-    await Provider.of<ItemProvider>(context, listen: false).addItem(
-      title: _titleController.text.trim(),
-      description: _descController.text.trim(),
-      status: ItemStatus.lost,
-      category: _selectedCategory,
-      location: _selectedLocation ?? '',
-      contactName: _nameController.text.trim(),
-      contactNumber: _phoneController.text.trim(),
-      imagePath: _imagePath,
-    );
+    final provider = Provider.of<ItemProvider>(context, listen: false);
+
+    if (widget.itemToEdit != null) {
+      // Update existing item
+      await provider.updateItem(
+        id: widget.itemToEdit!.id,
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
+        category: _selectedCategory,
+        location: _selectedLocation ?? '',
+        contactName: _nameController.text.trim(),
+        contactNumber: _phoneController.text.trim(),
+        imagePath: _imagePath,
+      );
+    } else {
+      // Add new item
+      await provider.addItem(
+        title: _titleController.text.trim(),
+        description: _descController.text.trim(),
+        status: ItemStatus.lost,
+        category: _selectedCategory,
+        location: _selectedLocation ?? '',
+        contactName: _nameController.text.trim(),
+        contactNumber: _phoneController.text.trim(),
+        imagePath: _imagePath,
+      );
+    }
 
     setState(() => _isLoading = false);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Lost item reported successfully!'),
+        SnackBar(
+          content: Text(widget.itemToEdit != null ? 'Report updated successfully!' : 'Lost item reported successfully!'),
           backgroundColor: AppColors.lost,
         ),
       );
@@ -78,6 +111,8 @@ class _ReportLostScreenState extends State<ReportLostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.itemToEdit != null;
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -90,9 +125,9 @@ class _ReportLostScreenState extends State<ReportLostScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Report Lost Item',
-          style: TextStyle(
+        title: Text(
+          isEditing ? 'Edit Lost Report' : 'Report Lost Item',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
@@ -118,10 +153,10 @@ class _ReportLostScreenState extends State<ReportLostScreen> {
                   children: [
                     const Icon(Icons.report_problem, color: AppColors.lost),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Fill in the details of your lost item. We\'ll help you find it!',
-                        style: TextStyle(
+                        isEditing ? 'Update the details of your report below.' : 'Fill in the details of your lost item. We\'ll help you find it!',
+                        style: const TextStyle(
                           color: AppColors.lost,
                           fontSize: 13,
                         ),
@@ -153,7 +188,9 @@ class _ReportLostScreenState extends State<ReportLostScreen> {
                     borderRadius: BorderRadius.circular(12),
                       child: kIsWeb
                           ? const Icon(Icons.check_circle, color: AppColors.found, size: 50)
-                          : Image.file(
+                          : _imagePath!.startsWith('assets/') || _imagePath!.startsWith('http') 
+                             ? const Icon(Icons.image, size: 50, color: AppColors.primary)
+                             : Image.file(
                         File(_imagePath!),
                         fit: BoxFit.cover,
                       ),
@@ -324,14 +361,14 @@ class _ReportLostScreenState extends State<ReportLostScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Row(
+                      : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.report_problem, color: Colors.white),
-                      SizedBox(width: 8),
+                      Icon(isEditing ? Icons.save : Icons.report_problem, color: Colors.white),
+                      const SizedBox(width: 8),
                       Text(
-                        'Submit Lost Report',
-                        style: TextStyle(
+                        isEditing ? 'Save Changes' : 'Submit Lost Report',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
