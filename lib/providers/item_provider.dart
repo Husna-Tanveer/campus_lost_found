@@ -37,6 +37,16 @@ class ItemProvider extends ChangeNotifier {
     });
   }
 
+  // Add searchItems method back
+  List<ItemModel> searchItems(String query) {
+    if (query.isEmpty) return _items;
+    return _items.where((item) {
+      return item.title.toLowerCase().contains(query.toLowerCase()) ||
+          item.description.toLowerCase().contains(query.toLowerCase()) ||
+          item.location.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+  }
+
   // Upload image to Firebase Storage and get URL
   Future<String?> _uploadImage(String localPath) async {
     try {

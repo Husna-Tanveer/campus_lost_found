@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider; // Conflicting AuthProvider hide kiya
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
 import '../models/item_model.dart';
