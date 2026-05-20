@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
 import '../models/item_model.dart';
@@ -15,8 +16,15 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final itemProvider = Provider.of<ItemProvider>(context);
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
     final userEmail = auth.currentUser?.email ?? '';
     final userName = userEmail.split('@')[0];
+
+    // Filter items to show only those belonging to the current user
+    final myItems = itemProvider.items.where((item) => item.userId == currentUser?.uid).toList();
+    final myLostCount = myItems.where((item) => item.status == ItemStatus.lost).length;
+    final myFoundCount = myItems.where((item) => item.status == ItemStatus.found).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -41,7 +49,7 @@ class ProfileScreen extends StatelessWidget {
                     radius: 45,
                     backgroundColor: Colors.white,
                     child: Text(
-                      userName.substring(0, 1).toUpperCase(),
+                      userName.isNotEmpty ? userName.substring(0, 1).toUpperCase() : 'U',
                       style: const TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
@@ -71,11 +79,11 @@ class ProfileScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _statCard('Lost', itemProvider.lostItems.length),
+                      _statCard('Lost', myLostCount),
                       const SizedBox(width: 20),
-                      _statCard('Found', itemProvider.foundItems.length),
+                      _statCard('Found', myFoundCount),
                       const SizedBox(width: 20),
-                      _statCard('Total', itemProvider.items.length),
+                      _statCard('Total', myItems.length),
                     ],
                   ),
                 ],
@@ -84,7 +92,7 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // My Reports
+            // My Reports Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -100,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  itemProvider.items.isEmpty
+                  myItems.isEmpty
                       ? Center(
                     child: Column(
                       children: [
@@ -109,7 +117,7 @@ class ProfileScreen extends StatelessWidget {
                             size: 60, color: Colors.grey.shade400),
                         const SizedBox(height: 8),
                         Text(
-                          'No reports yet',
+                          'You haven\'t reported anything yet',
                           style: TextStyle(
                               color: Colors.grey.shade500,
                               fontSize: 16),
@@ -120,9 +128,9 @@ class ProfileScreen extends StatelessWidget {
                       : ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: itemProvider.items.length,
+                    itemCount: myItems.length,
                     itemBuilder: (context, index) {
-                      final item = itemProvider.items[index];
+                      final item = myItems[index];
                       final isLost = item.status == ItemStatus.lost;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
@@ -211,6 +219,21 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildLeadingImage(ItemModel item, bool isLost) {
     if (item.imagePath != null && !kIsWeb) {
+      if (item.imagePath!.startsWith('http')) {
+        return ClipOval(
+          child: Image.network(
+            item.imagePath!,
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              ItemModel.categoryIcon(item.category),
+              color: isLost ? AppColors.lost : AppColors.found,
+            ),
+          ),
+        );
+      }
+      
       final file = File(item.imagePath!);
       if (file.existsSync()) {
         return ClipOval(

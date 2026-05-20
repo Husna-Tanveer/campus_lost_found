@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import '../models/item_model.dart';
 
 class ItemProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  
   List<ItemModel> _items = [];
 
   List<ItemModel> get items => _items;
@@ -20,7 +24,6 @@ class ItemProvider extends ChangeNotifier {
     _listenToItems();
   }
 
-  // Listen to Firestore real-time updates
   void _listenToItems() {
     _firestore
         .collection('items')
@@ -34,17 +37,21 @@ class ItemProvider extends ChangeNotifier {
     });
   }
 
-  // Search filter
-  List<ItemModel> searchItems(String query) {
-    if (query.isEmpty) return _items;
-    return _items.where((item) {
-      return item.title.toLowerCase().contains(query.toLowerCase()) ||
-          item.description.toLowerCase().contains(query.toLowerCase()) ||
-          item.location.toLowerCase().contains(query.toLowerCase());
-    }).toList();
+  // Upload image to Firebase Storage and get URL
+  Future<String?> _uploadImage(String localPath) async {
+    try {
+      File file = File(localPath);
+      String fileName = 'items/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      Reference ref = _storage.ref().child(fileName);
+      UploadTask uploadTask = ref.putFile(file);
+      TaskSnapshot snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
   }
 
-  // Add new item to Firestore
   Future<void> addItem({
     required String title,
     required String description,
@@ -58,6 +65,11 @@ class ItemProvider extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    String? downloadUrl;
+    if (imagePath != null && !imagePath.startsWith('http')) {
+      downloadUrl = await _uploadImage(imagePath);
+    }
+
     await _firestore.collection('items').add({
       'title': title,
       'description': description,
@@ -68,11 +80,10 @@ class ItemProvider extends ChangeNotifier {
       'contactName': contactName,
       'contactNumber': contactNumber,
       'userId': user.uid,
-      'imagePath': imagePath,
+      'imagePath': downloadUrl ?? imagePath,
     });
   }
 
-  // Update existing item in Firestore
   Future<void> updateItem({
     required String id,
     required String title,
@@ -86,6 +97,11 @@ class ItemProvider extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    String? imageUrl = imagePath;
+    if (imagePath != null && !imagePath.startsWith('http')) {
+      imageUrl = await _uploadImage(imagePath);
+    }
+
     await _firestore.collection('items').doc(id).update({
       'title': title,
       'description': description,
@@ -93,11 +109,10 @@ class ItemProvider extends ChangeNotifier {
       'location': location,
       'contactName': contactName,
       'contactNumber': contactNumber,
-      'imagePath': imagePath,
+      'imagePath': imageUrl,
     });
   }
 
-  // Delete item from Firestore
   Future<void> deleteItem(String id) async {
     await _firestore.collection('items').doc(id).delete();
   }

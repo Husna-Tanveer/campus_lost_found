@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ItemProvider()),
       ],
       child: MaterialApp(
-        title: 'Campus Lost and Found',
+        title: 'CampusSeek',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
