@@ -41,8 +41,7 @@ class ItemCard extends StatelessWidget {
                   topRight: Radius.circular(16),
                 ),
               ),
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Icon(
@@ -81,40 +80,7 @@ class ItemCard extends StatelessWidget {
                   // Image or Icon
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: item.imagePath != null
-                        ? kIsWeb
-                        ? Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        ItemModel.categoryIcon(item.category),
-                        size: 40,
-                        color: AppColors.primary,
-                      ),
-                    )
-                        : Image.file(
-                      File(item.imagePath!),
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    )
-                        : Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        ItemModel.categoryIcon(item.category),
-                        size: 40,
-                        color: AppColors.primary,
-                      ),
-                    ),
+                    child: _buildImage(),
                   ),
                   const SizedBox(width: 12),
 
@@ -194,6 +160,49 @@ class ItemCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    // No image
+    if (item.imagePath == null) {
+      return _iconContainer();
+    }
+
+    // Web platform
+    if (kIsWeb) {
+      return _iconContainer();
+    }
+
+    // Check if file exists
+    final file = File(item.imagePath!);
+    if (!file.existsSync()) {
+      return _iconContainer();
+    }
+
+    // Show image
+    return Image.file(
+      file,
+      width: 80,
+      height: 80,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _iconContainer(),
+    );
+  }
+
+  Widget _iconContainer() {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        ItemModel.categoryIcon(item.category),
+        size: 40,
+        color: AppColors.primary,
       ),
     );
   }
