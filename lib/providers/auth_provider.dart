@@ -4,7 +4,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   User? get currentUser => _auth.currentUser;
   bool get isLoggedIn => _auth.currentUser != null;
@@ -38,10 +37,18 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Google Sign In
+  // Google Sign In - webClientId approach
   Future<String?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      const String webClientId =
+          '334308805126-om7i3eqov3kfg62863dh0tascgskm38h.apps.googleusercontent.com';
+
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: webClientId,
+      );
+      await googleSignIn.signOut(); // ADD THIS LINE
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return 'Google sign in cancelled';
 
       final GoogleSignInAuthentication googleAuth =
@@ -64,7 +71,6 @@ class AuthProvider extends ChangeNotifier {
 
   // Logout
   Future<void> logout() async {
-    await _googleSignIn.signOut();
     await _auth.signOut();
     notifyListeners();
   }

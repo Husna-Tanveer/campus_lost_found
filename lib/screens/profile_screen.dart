@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
@@ -121,8 +123,7 @@ class ProfileScreen extends StatelessWidget {
                     itemCount: itemProvider.items.length,
                     itemBuilder: (context, index) {
                       final item = itemProvider.items[index];
-                      final isLost =
-                          item.status == ItemStatus.lost;
+                      final isLost = item.status == ItemStatus.lost;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         shape: RoundedRectangleBorder(
@@ -133,12 +134,7 @@ class ProfileScreen extends StatelessWidget {
                             backgroundColor: isLost
                                 ? AppColors.lost.withOpacity(0.1)
                                 : AppColors.found.withOpacity(0.1),
-                            child: Icon(
-                              ItemModel.categoryIcon(item.category),
-                              color: isLost
-                                  ? AppColors.lost
-                                  : AppColors.found,
-                            ),
+                            child: _buildLeadingImage(item, isLost),
                           ),
                           title: Text(
                             item.title,
@@ -210,6 +206,30 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLeadingImage(ItemModel item, bool isLost) {
+    if (item.imagePath != null && !kIsWeb) {
+      final file = File(item.imagePath!);
+      if (file.existsSync()) {
+        return ClipOval(
+          child: Image.file(
+            file,
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              ItemModel.categoryIcon(item.category),
+              color: isLost ? AppColors.lost : AppColors.found,
+            ),
+          ),
+        );
+      }
+    }
+    return Icon(
+      ItemModel.categoryIcon(item.category),
+      color: isLost ? AppColors.lost : AppColors.found,
     );
   }
 
