@@ -21,6 +21,7 @@ class ItemModel {
   final DateTime dateTime;
   final String contactName;
   final String contactNumber;
+  final String userId; // Kaunse user ne post kiya hai
   String? imagePath;
 
   ItemModel({
@@ -33,46 +34,32 @@ class ItemModel {
     required this.dateTime,
     required this.contactName,
     required this.contactNumber,
+    required this.userId,
     this.imagePath,
   });
 
-  // Category ko readable string mein convert karo
   static String categoryToString(ItemCategory category) {
     switch (category) {
-      case ItemCategory.electronics:
-        return 'Electronics';
-      case ItemCategory.books:
-        return 'Books';
-      case ItemCategory.clothing:
-        return 'Clothing';
-      case ItemCategory.accessories:
-        return 'Accessories';
-      case ItemCategory.documents:
-        return 'Documents';
-      case ItemCategory.other:
-        return 'Other';
+      case ItemCategory.electronics: return 'Electronics';
+      case ItemCategory.books: return 'Books';
+      case ItemCategory.clothing: return 'Clothing';
+      case ItemCategory.accessories: return 'Accessories';
+      case ItemCategory.documents: return 'Documents';
+      case ItemCategory.other: return 'Other';
     }
   }
 
-  // Category icon
   static IconData categoryIcon(ItemCategory category) {
     switch (category) {
-      case ItemCategory.electronics:
-        return Icons.devices;
-      case ItemCategory.books:
-        return Icons.menu_book;
-      case ItemCategory.clothing:
-        return Icons.checkroom;
-      case ItemCategory.accessories:
-        return Icons.watch;
-      case ItemCategory.documents:
-        return Icons.description;
-      case ItemCategory.other:
-        return Icons.category;
+      case ItemCategory.electronics: return Icons.devices;
+      case ItemCategory.books: return Icons.menu_book;
+      case ItemCategory.clothing: return Icons.checkroom;
+      case ItemCategory.accessories: return Icons.watch;
+      case ItemCategory.documents: return Icons.description;
+      case ItemCategory.other: return Icons.category;
     }
   }
 
-  // JSON conversion
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -84,6 +71,7 @@ class ItemModel {
       'dateTime': dateTime.toIso8601String(),
       'contactName': contactName,
       'contactNumber': contactNumber,
+      'userId': userId,
       'imagePath': imagePath,
     };
   }
@@ -99,6 +87,7 @@ class ItemModel {
       dateTime: DateTime.parse(map['dateTime']),
       contactName: map['contactName'],
       contactNumber: map['contactNumber'],
+      userId: map['userId'] ?? '',
       imagePath: map['imagePath'],
     );
   }

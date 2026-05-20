@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/item_model.dart';
 import '../providers/item_provider.dart';
 import '../utils/colors.dart';
@@ -17,6 +18,9 @@ class ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLost = item.status == ItemStatus.lost;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    // Check if the current user is the one who posted this item
+    final isOwner = currentUser != null && item.userId == currentUser.uid;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -151,7 +155,8 @@ class ItemCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Action Buttons
+                  // Action Buttons (Only shown to owner)
+                  if (isOwner)
                   Column(
                     children: [
                       IconButton(
@@ -185,23 +190,23 @@ class ItemCard extends StatelessWidget {
   }
 
   Widget _buildImage() {
-    // No image
-    if (item.imagePath == null) {
-      return _iconContainer();
+    if (item.imagePath == null) return _iconContainer();
+    if (kIsWeb) return _iconContainer();
+
+    // Check if it's a URL or a local file
+    if (item.imagePath!.startsWith('http')) {
+      return Image.network(
+        item.imagePath!,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _iconContainer(),
+      );
     }
 
-    // Web platform
-    if (kIsWeb) {
-      return _iconContainer();
-    }
-
-    // Check if file exists
     final file = File(item.imagePath!);
-    if (!file.existsSync()) {
-      return _iconContainer();
-    }
+    if (!file.existsSync()) return _iconContainer();
 
-    // Show image
     return Image.file(
       file,
       width: 80,

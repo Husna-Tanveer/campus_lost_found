@@ -1,12 +1,12 @@
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 import '../models/item_model.dart';
 
 class ItemProvider extends ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   List<ItemModel> _items = [];
-  final Uuid _uuid = const Uuid();
 
   List<ItemModel> get items => _items;
 
@@ -17,7 +17,21 @@ class ItemProvider extends ChangeNotifier {
       _items.where((item) => item.status == ItemStatus.found).toList();
 
   ItemProvider() {
-    loadItems();
+    _listenToItems();
+  }
+
+  // Listen to Firestore real-time updates
+  void _listenToItems() {
+    _firestore
+        .collection('items')
+        .orderBy('dateTime', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      _items = snapshot.docs
+          .map((doc) => ItemModel.fromMap({...doc.data(), 'id': doc.id}))
+          .toList();
+      notifyListeners();
+    });
   }
 
   // Search filter
@@ -30,12 +44,7 @@ class ItemProvider extends ChangeNotifier {
     }).toList();
   }
 
-  // Category filter
-  List<ItemModel> filterByCategory(ItemCategory category) {
-    return _items.where((item) => item.category == category).toList();
-  }
-
-  // Add new item
+  // Add new item to Firestore
   Future<void> addItem({
     required String title,
     required String description,
@@ -46,24 +55,24 @@ class ItemProvider extends ChangeNotifier {
     required String contactNumber,
     String? imagePath,
   }) async {
-    final newItem = ItemModel(
-      id: _uuid.v4(),
-      title: title,
-      description: description,
-      status: status,
-      category: category,
-      location: location,
-      dateTime: DateTime.now(),
-      contactName: contactName,
-      contactNumber: contactNumber,
-      imagePath: imagePath,
-    );
-    _items.insert(0, newItem);
-    notifyListeners();
-    await saveItems();
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore.collection('items').add({
+      'title': title,
+      'description': description,
+      'status': status.index,
+      'category': category.index,
+      'location': location,
+      'dateTime': DateTime.now().toIso8601String(),
+      'contactName': contactName,
+      'contactNumber': contactNumber,
+      'userId': user.uid,
+      'imagePath': imagePath,
+    });
   }
 
-  // Update existing item
+  // Update existing item in Firestore
   Future<void> updateItem({
     required String id,
     required String title,
@@ -74,47 +83,22 @@ class ItemProvider extends ChangeNotifier {
     required String contactNumber,
     String? imagePath,
   }) async {
-    final index = _items.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      final existingItem = _items[index];
-      _items[index] = ItemModel(
-        id: id,
-        title: title,
-        description: description,
-        status: existingItem.status,
-        category: category,
-        location: location,
-        dateTime: existingItem.dateTime,
-        contactName: contactName,
-        contactNumber: contactNumber,
-        imagePath: imagePath,
-      );
-      notifyListeners();
-      await saveItems();
-    }
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore.collection('items').doc(id).update({
+      'title': title,
+      'description': description,
+      'category': category.index,
+      'location': location,
+      'contactName': contactName,
+      'contactNumber': contactNumber,
+      'imagePath': imagePath,
+    });
   }
 
-  // Delete item
+  // Delete item from Firestore
   Future<void> deleteItem(String id) async {
-    _items.removeWhere((item) => item.id == id);
-    notifyListeners();
-    await saveItems();
-  }
-
-  // Save to SharedPreferences
-  Future<void> saveItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    final itemList = _items.map((item) => jsonEncode(item.toMap())).toList();
-    await prefs.setStringList('items', itemList);
-  }
-
-  // Load from SharedPreferences
-  Future<void> loadItems() async {
-    final prefs = await SharedPreferences.getInstance();
-    final itemList = prefs.getStringList('items') ?? [];
-    _items = itemList
-        .map((item) => ItemModel.fromMap(jsonDecode(item)))
-        .toList();
-    notifyListeners();
+    await _firestore.collection('items').doc(id).delete();
   }
 }
