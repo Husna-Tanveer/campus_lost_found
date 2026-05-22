@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import '../models/item_model.dart';
+
 
 class ItemProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -50,14 +53,18 @@ class ItemProvider extends ChangeNotifier {
   // Upload image to Firebase Storage and get URL
   Future<String?> _uploadImage(String localPath) async {
     try {
-      File file = File(localPath);
-      String fileName = 'items/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference ref = _storage.ref().child(fileName);
-      UploadTask uploadTask = ref.putFile(file);
-      TaskSnapshot snapshot = await uploadTask;
-      return await snapshot.ref.getDownloadURL();
+      var uri = Uri.parse(
+          'https://api.cloudinary.com/v1_1/dnma4zmrr/image/upload');
+      var request = http.MultipartRequest('POST', uri);
+      request.fields['upload_preset'] = 'campus_lost_found';
+      request.files.add(
+          await http.MultipartFile.fromPath('file', localPath));
+      var response = await request.send();
+      var responseData = await response.stream.toBytes();
+      var jsonResponse = jsonDecode(String.fromCharCodes(responseData));
+      return jsonResponse['secure_url'];
     } catch (e) {
-      print('Error uploading image: $e');
+      print('Cloudinary upload error: $e');
       return null;
     }
   }
